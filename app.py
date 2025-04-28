@@ -27,7 +27,7 @@ def create_event():
         event_date = datetime.fromisoformat(data["date"].replace("Z", "+00:00"))
         now = datetime.now(pytz.UTC)
 
-        # Check if date is in future (with 1-hour buffer)
+        # Check if date is in future
         if event_date <= now.replace(tzinfo=pytz.UTC):
             return jsonify({"error": "Event date must be in the future"}), 400
 
@@ -119,7 +119,11 @@ def book_tickets(event_id):
     if not event:
         return jsonify({"error": "Event not found"}), 404
 
-    if event.date < datetime.now(pytz.UTC):
+    # Make event.date timezone-aware by assuming it's in UTC
+    event_date = (
+        pytz.UTC.localize(event.date) if event.date.tzinfo is None else event.date
+    )
+    if event_date < datetime.now(pytz.UTC):
         return jsonify({"error": "Cannot book tickets for past events"}), 400
 
     ticket_category = None
